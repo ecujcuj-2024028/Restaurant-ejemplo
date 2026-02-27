@@ -5,7 +5,7 @@ import {
     UserPasswordReset,
 } from '../src/user/user.model.js';
 import { UserRole, Role } from '../src/auth/role.model.js';
-import { ALLOWED_ROLES } from './role-constants.js';
+import { ALLOWED_ROLES, CLIENTE } from './role-constants.js';
 import { hashPassword } from '../utils/password-utils.js';
 import { Op } from 'sequelize';
 
@@ -137,10 +137,7 @@ export const createNewUser = async (userData) => {
         );
 
         // Asignar rol USER_ROLE por defecto (matching .NET DataSeeder)
-        const userRole = await Role.findOne(
-            { where: { Name: USER_ROLE } },
-            { transaction }
-        );
+        const userRole = await Role.findOne({ where: { Name: CLIENTE } }, { transaction });
         if (userRole) {
             await UserRole.create(
                 {

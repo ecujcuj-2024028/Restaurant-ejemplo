@@ -24,49 +24,80 @@ import { RoleUpgradeRequest } from './RoleUpgradeRequest.js';
    REGISTER
    ========================= */
 export const register = async (req, res) => {
-    const t = await sequelize.transaction();
+    const { name, surname, username, email, password, phone } = req.body;
+
     try {
-        const { name, surname, username, email, password, phone } = req.body;
-        const hashedPassword = await hashPassword(password);
-
-        const user = await User.create({
-            Name: name, Surname: surname,
-            Username: username.toLowerCase(),
-            Email: email.toLowerCase(),
-            Password: hashedPassword, Status: false
-        }, { transaction: t });
-
-        await UserProfile.create({ UserId: user.Id, Phone: phone }, { transaction: t });
-
-        const role = await Role.findOne({ where: { Name: CLIENTE } });
-        if (!role) throw new Error(`El rol ${CLIENTE} no existe.`);
-        await UserRole.create({ UserId: user.Id, RoleId: role.Id }, { transaction: t });
-
-        const verificationToken = await generateVerificationToken(user.Id, 'EMAIL_VERIFICATION');
-        await UserEmail.create({
-            UserId: user.Id,
-            EmailVerificationToken: verificationToken,
-            EmailVerificationTokenExpiry: new Date(Date.now() + (24 * 60 * 60 * 1000))
-        }, { transaction: t });
-
-        await UserPasswordReset.create({ UserId: user.Id }, { transaction: t });
-
-        await t.commit();
-
-        sendVerificationEmail(user.Email, user.Name, verificationToken)
-            .catch(err => console.error('Error enviando email:', err));
-
-        return res.status(201).json({
-            success: true,
-            message: 'Usuario registrado. Por favor verifica tu correo para activar tu cuenta.',
-            user: { username: user.Username, email: user.Email }
+        const existing = await User.findOne({
+            where: {
+                [Op.or]: [
+                    { Email: email.toLowerCase() },
+                    { Username: username.toLowerCase() }
+                ]
+            }
         });
+
+        if (existing) {
+            return res.status(409).json({
+                success: false,
+                message: 'El email o username ya están en uso.'
+            });
+        }
+
+        const t = await sequelize.transaction();
+
+        try {
+            const hashedPassword = await hashPassword(password);
+
+            const user = await User.create({
+                Name: name,
+                Surname: surname,
+                Username: username.toLowerCase(),
+                Email: email.toLowerCase(),
+                Password: hashedPassword,
+                Status: false
+            }, { transaction: t });
+
+            await UserProfile.create({ UserId: user.Id, Phone: phone }, { transaction: t });
+
+            const role = await Role.findOne({ where: { Name: CLIENTE } });
+            if (!role) throw new Error(`El rol ${CLIENTE} no existe.`);
+
+            await UserRole.create({ UserId: user.Id, RoleId: role.Id }, { transaction: t });
+
+            const verificationToken = await generateVerificationToken(user.Id, 'EMAIL_VERIFICATION');
+
+            await UserEmail.create({
+                UserId: user.Id,
+                EmailVerificationToken: verificationToken,
+                EmailVerificationTokenExpiry: new Date(Date.now() + (24 * 60 * 60 * 1000))
+            }, { transaction: t });
+
+            await UserPasswordReset.create({ UserId: user.Id }, { transaction: t });
+
+            await t.commit();
+
+            sendVerificationEmail(user.Email, user.Name, verificationToken)
+                .catch(err => console.error('Error enviando email:', err));
+
+            return res.status(201).json({
+                success: true,
+                message: 'Usuario registrado. Por favor verifica tu correo para activar tu cuenta.',
+                user: { username: user.Username, email: user.Email }
+            });
+
+        } catch (error) {
+            await t.rollback();
+            throw error;
+        }
+
     } catch (error) {
-        if (t) await t.rollback();
-        return res.status(500).json({ success: false, message: error.message });
+        console.error('Error en registro:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Ocurrió un error interno en el servidor.'
+        });
     }
 };
-
 /* =========================
    LOGIN
    ========================= */

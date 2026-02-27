@@ -33,4 +33,4 @@ const categorySchema = mongoose.Schema(
     }
 );
 
-export default mongoose.model('Category', categorySchema);
+export default mongoose.models.GastronomyCategory || mongoose.model('GastronomyCategory', categorySchema);

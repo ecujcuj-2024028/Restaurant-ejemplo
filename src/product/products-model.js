@@ -55,7 +55,7 @@ const productSchema = mongoose.Schema(
 
         type: {
             type: String,
-            enum: ["starter", " ", "dessert", "beverage", "side_dish", "combo"],
+            enum: ["starter", "main", "dessert", "beverage", "side_dish", "combo"],
             required: [true, "El tipo de producto es requerido"]
         },
 

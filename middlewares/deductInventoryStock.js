@@ -1,4 +1,4 @@
-import { sequelize } from '../../configs/db-postgres.js';
+import { sequelize } from '../configs/db-postgres.js';
 import { InventoryItem } from '../src/inventory/inventory.model.js';
 import Order from '../src/orders/order.model.js';
 

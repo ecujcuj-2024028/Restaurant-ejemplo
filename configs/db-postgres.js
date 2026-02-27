@@ -40,8 +40,6 @@ export const dbConnection = async () => {
 
         // Sincronizar modelos en desarrollo
         if (process.env.NODE_ENV === 'development') {
-            const syncLogging =
-                process.env.DB_SQL_LOGGING === 'true' ? console.log : false;
             await sequelize.sync({ alter: true, logging: syncLogging });
             console.log('PostgreSQL | Models synchronized with database');
         }

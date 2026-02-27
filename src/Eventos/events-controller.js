@@ -18,7 +18,6 @@ export const getEvents = async (req, res) => {
             .populate('featuredProducts', 'name price image')
             .sort({ startDate: 1 });
 
-        // Actualizar estados automáticamente basándose en fechas
         events = await checkAndUpdateMultipleEventStatuses(events);
 
         return res.status(200).json({
@@ -47,7 +46,6 @@ export const getEvent = async (req, res) => {
                 message: `Evento no encontrado con id ${req.params.id}`
             });
 
-        // Actualizar estado automáticamente
         event = await checkAndUpdateEventStatus(req.params.id);
 
         return res.status(200).json({
@@ -67,10 +65,18 @@ export const createEvent = async (req, res) => {
     try {
         const data = req.body;
 
-        // Validación de capacidad del evento vs capacidad total del restaurante
+        const { restaurantId } = req.body;
+
+        if (!restaurantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'El campo restaurantId es obligatorio.'
+            });
+        }
+
         if (data.capacity) {
             const tables = await Table.find({
-                restaurant: req.user.restaurant,
+                restaurant: restaurantId,
                 isActive: true
             });
 
@@ -84,26 +90,25 @@ export const createEvent = async (req, res) => {
             }
         }
 
-        // Validación de productos destacados
         if (data.featuredProducts && data.featuredProducts.length > 0) {
             const productIds = data.featuredProducts;
             const products = await Product.find({
                 _id: { $in: productIds },
-                restaurant: req.user.restaurant,
+                restaurant: restaurantId,
                 isActive: true
             });
 
             if (products.length !== productIds.length) {
                 return res.status(404).json({
                     success: false,
-                    message: 'Uno o más productos no existen o no pertenecen a tu restaurante'
+                    message: 'Uno o más productos no existen o no pertenecen al restaurante indicado'
                 });
             }
         }
 
         const event = await Event.create({
             ...data,
-            restaurant: req.user.restaurant
+            restaurant: restaurantId
         });
 
         const populatedEvent = await Event.findById(event._id)
@@ -133,14 +138,16 @@ export const updateEvent = async (req, res) => {
                 message: `Evento no encontrado con id ${req.params.id}`
             });
 
-        if (req.user.role !== 'admin' &&
-            event.restaurant.toString() !== req.user.restaurant.toString())
+        const userRoles = req.user.UserRoles.map(ur => ur.Role.Name);
+        const isAdmin   = userRoles.includes('ADMIN_SISTEMA');
+
+        if (!isAdmin && event.restaurant.toString() !== req.body.restaurantId) {
             return res.status(403).json({
                 success: false,
                 message: 'No autorizado para actualizar este evento'
             });
+        }
 
-        // Validación de capacidad si se está actualizando
         if (req.body.capacity) {
             const tables = await Table.find({
                 restaurant: event.restaurant,
@@ -157,7 +164,6 @@ export const updateEvent = async (req, res) => {
             }
         }
 
-        // Validación de productos destacados si se están actualizando
         if (req.body.featuredProducts && req.body.featuredProducts.length > 0) {
             const productIds = req.body.featuredProducts;
             const products = await Product.find({
@@ -242,12 +248,15 @@ export const deleteEvent = async (req, res) => {
                 message: `Evento no encontrado con id ${req.params.id}`
             });
 
-        if (req.user.role !== 'admin' &&
-            event.restaurant.toString() !== req.user.restaurant.toString())
+        const userRoles = req.user.UserRoles.map(ur => ur.Role.Name);
+        const isAdmin   = userRoles.includes('ADMIN_SISTEMA');
+
+        if (!isAdmin && event.restaurant.toString() !== req.body.restaurantId) {
             return res.status(403).json({
                 success: false,
                 message: 'No autorizado para eliminar este evento'
             });
+        }
 
         await Event.findByIdAndUpdate(
             req.params.id,
@@ -267,10 +276,6 @@ export const deleteEvent = async (req, res) => {
     }
 };
 
-/**
- * Agregar producto destacado a un evento
- * POST /api/v1/events/:id/featured-products
- */
 export const addFeaturedProduct = async (req, res) => {
     try {
         const event = await Event.findById(req.params.id);
@@ -281,16 +286,18 @@ export const addFeaturedProduct = async (req, res) => {
                 message: `Evento no encontrado con id ${req.params.id}`
             });
 
-        if (req.user.role !== 'admin' &&
-            event.restaurant.toString() !== req.user.restaurant.toString())
+        const userRoles = req.user.UserRoles.map(ur => ur.Role.Name);
+        const isAdmin   = userRoles.includes('ADMIN_SISTEMA');
+
+        if (!isAdmin && event.restaurant.toString() !== req.body.restaurantId) {
             return res.status(403).json({
                 success: false,
                 message: 'No autorizado para modificar este evento'
             });
+        }
 
         const { productId } = req.body;
 
-        // Validar que el producto existe y pertenece al mismo restaurante
         const product = await Product.findOne({
             _id: productId,
             restaurant: event.restaurant,
@@ -303,7 +310,6 @@ export const addFeaturedProduct = async (req, res) => {
                 message: 'El producto no existe o no pertenece al restaurante del evento'
             });
 
-        // Verificar que no esté ya agregado
         if (event.featuredProducts.includes(productId))
             return res.status(400).json({
                 success: false,
@@ -330,10 +336,6 @@ export const addFeaturedProduct = async (req, res) => {
     }
 };
 
-/**
- * Eliminar producto destacado de un evento
- * DELETE /api/v1/events/:id/featured-products/:productId
- */
 export const removeFeaturedProduct = async (req, res) => {
     try {
         const event = await Event.findById(req.params.id);
@@ -344,12 +346,15 @@ export const removeFeaturedProduct = async (req, res) => {
                 message: `Evento no encontrado con id ${req.params.id}`
             });
 
-        if (req.user.role !== 'admin' &&
-            event.restaurant.toString() !== req.user.restaurant.toString())
+        const userRoles = req.user.UserRoles.map(ur => ur.Role.Name);
+        const isAdmin   = userRoles.includes('ADMIN_SISTEMA');
+
+        if (!isAdmin && event.restaurant.toString() !== req.body.restaurantId) {
             return res.status(403).json({
                 success: false,
                 message: 'No autorizado para modificar este evento'
             });
+        }
 
         const { productId } = req.params;
 

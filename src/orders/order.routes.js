@@ -13,7 +13,7 @@ import { ADMIN_RESTAURANTE, ADMIN_SISTEMA } from '../../helpers/role-constants.j
 
 const router = Router();
 
-router.post('/order',           validateJWT, createOrder);
+router.post('/orders',           validateJWT, createOrder);
 router.patch('/cancel/:id',     validateJWT, cancelOrder);
 router.get('/orders/history',   validateJWT, getOrderHistory);
 

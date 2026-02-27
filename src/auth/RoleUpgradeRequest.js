@@ -11,7 +11,7 @@ export const RoleUpgradeRequest = sequelize.define('RoleUpgradeRequest', {
         primaryKey: true
     },
     UserId: {
-        type: DataTypes.STRING, 
+        type: DataTypes.STRING(16),
         allowNull: false
     },
     RequestedRole: {
@@ -23,7 +23,7 @@ export const RoleUpgradeRequest = sequelize.define('RoleUpgradeRequest', {
         defaultValue: 'PENDING'
     },
     ReviewedBy: {
-        type: DataTypes.STRING, 
+        type: DataTypes.STRING(16),
         allowNull: true
     }
 }, {

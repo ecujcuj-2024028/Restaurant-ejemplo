@@ -1,6 +1,6 @@
 'use strict';
 
-import Table from '../tables/table.model';
+import Table from '../tables/table.model.js';
 
 export const createTable = async (req, res) => {
     try {

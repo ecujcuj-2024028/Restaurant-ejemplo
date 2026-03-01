@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import { sequelize } from '../../configs/db-postgres.js';
 import { User, UserProfile, UserEmail, UserPasswordReset } from '../user/user.model.js';
 import { Role, UserRole } from '../auth/role.model.js';

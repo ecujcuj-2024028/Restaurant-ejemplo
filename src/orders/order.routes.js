@@ -13,12 +13,12 @@ import { ADMIN_RESTAURANTE, ADMIN_SISTEMA } from '../../helpers/role-constants.j
 
 const router = Router();
 
-router.post('/orders',           validateJWT, createOrder);
-router.patch('/cancel/:id',     validateJWT, cancelOrder);
-router.get('/orders/history',   validateJWT, getOrderHistory);
+router.post('/',           validateJWT, createOrder);
+router.patch('/:id/cancel',     validateJWT, cancelOrder);
+router.get('/history',   validateJWT, getOrderHistory);
 
-router.patch('/orders/:id/status', validateJWT, hasRole(ADMIN_RESTAURANTE, ADMIN_SISTEMA), updateOrderStatus);
-router.get('/orders',              validateJWT, hasRole(ADMIN_RESTAURANTE, ADMIN_SISTEMA), getRestaurantOrders);
-router.get('/orders/:id/invoice',  validateJWT, getInvoice);
+router.patch('/:id/status', validateJWT, hasRole(ADMIN_RESTAURANTE, ADMIN_SISTEMA), updateOrderStatus);
+router.get('/',              validateJWT, hasRole(ADMIN_RESTAURANTE, ADMIN_SISTEMA), getRestaurantOrders);
+router.get('/:id/invoice',  validateJWT, getInvoice);
 
 export default router;

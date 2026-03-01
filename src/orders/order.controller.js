@@ -50,13 +50,14 @@ export const createOrder = async (req, res) => {
           });
         }
 
-        if (parseFloat(inventoryItem.Quantity) < item.quantity) {
+        const ingredientQty = parseFloat(ingredient.quantity) || 1;
+
+        if (parseFloat(inventoryItem.Quantity) < ingredientQty * item.quantity) {
           return res.status(400).json({
             message: `Stock insuficiente para ${ingredient.name}. Disponible: ${inventoryItem.Quantity}`
           });
         }
 
-        const ingredientQty = parseFloat(ingredient.quantity) || 1;
         inventoryItem.Quantity = parseFloat(inventoryItem.Quantity) - (ingredientQty * item.quantity);
         await inventoryItem.save();
 

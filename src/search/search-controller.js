@@ -141,7 +141,7 @@ export const searchRestaurants = async (req, res) => {
                     restaurants: [],
                 });
             }
-            filter.categories = { $in: cats.map((c) => c._id) };
+            filter.category = { $regex: category, $options: 'i' };
         }
 
         // filtro para disponibilidad, solo si hay mesas disponibles
@@ -166,8 +166,7 @@ export const searchRestaurants = async (req, res) => {
         const [total, restaurants] = await Promise.all([
             Restaurant.countDocuments(filter),
             Restaurant.find(filter)
-                .populate('categories', 'name image')
-                .select('name description address rating categories image')
+                .select('name description address rating category image')
                 .sort({ rating: -1 })
                 .skip(skip)
                 .limit(limit),

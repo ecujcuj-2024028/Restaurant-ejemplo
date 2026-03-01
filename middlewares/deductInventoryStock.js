@@ -1,13 +1,14 @@
 import { sequelize } from '../configs/db-postgres.js';
 import { InventoryItem } from '../src/inventory/inventory.model.js';
 import Order from '../src/orders/order.model.js';
+import { sendLowStockEmail } from '../src/services/email.service.js';
 
-const sendLowStockEmail = async (inventoryItem) => {
-  console.log(`LOW STOCK ALERT: ${inventoryItem.Name}`);
-};
+const LEONEL_EMAIL = process.env.ROOT_ADMIN_EMAIL; 
+const LEONEL_NAME  = 'Leonel';
 
 export const deductInventoryStock = async (orderId) => {
   const transaction = await sequelize.transaction();
+  const lowStockItems = [];
 
   try {
     const order = await Order.findById(orderId);
@@ -41,11 +42,31 @@ export const deductInventoryStock = async (orderId) => {
       );
 
       if (newStock <= parseFloat(inventoryItem.MinStock)) {
-        await sendLowStockEmail(inventoryItem);
+        lowStockItems.push({
+          itemName     : inventoryItem.Name,
+          currentStock : newStock,
+          minStock     : inventoryItem.MinStock,
+          unit         : inventoryItem.Unit,
+          restaurantId : order.restaurantId.toString()
+        });
       }
     }
 
     await transaction.commit();
+
+
+
+    for (const item of lowStockItems) {
+      await sendLowStockEmail({
+        adminEmail   : LEONEL_EMAIL,
+        adminName    : LEONEL_NAME,
+        itemName     : item.itemName,
+        currentStock : item.currentStock,
+        minStock     : item.minStock,
+        unit         : item.unit,
+        restaurantId : item.restaurantId,
+      });
+    }
 
   } catch (error) {
     await transaction.rollback();

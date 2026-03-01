@@ -38,8 +38,6 @@ import menuRoutes from '../src/menu/menu-routes.js';
 import searchRoutes from '../src/search/search-routes.js';
 import categoriesRoutes from '../src/category/categories.routes.js';
 import customerRoutes from '../src/customer/customerHistory.routes.js'
-
-// GT-13: Gestión de Perfil de Usuario
 import userRoutes from '../src/user/user.routes.js';
 
 const BASE_PATH = '/restaurantManagement/v1';

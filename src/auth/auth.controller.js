@@ -58,7 +58,12 @@ export const register = async (req, res) => {
                 Status: false
             }, { transaction: t });
 
-            await UserProfile.create({ UserId: user.Id, Phone: phone }, { transaction: t });
+            const { getDefaultAvatarUrl } = await import('../../helpers/cloudinary-service.js');
+            await UserProfile.create({
+                UserId: user.Id,
+                Phone: phone,
+                ProfilePicture: getDefaultAvatarUrl(),
+            }, { transaction: t });
 
             const role = await Role.findOne({ where: { Name: CLIENTE } });
             if (!role) throw new Error(`El rol ${CLIENTE} no existe.`);

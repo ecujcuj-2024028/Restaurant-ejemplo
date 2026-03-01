@@ -6,7 +6,8 @@ import {
     getProduct,
     createProduct,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    getProductStats,
 } from '../product/product-controller.js';
 
 import { validateJWT } from '../../middlewares/validate-JWT.js';
@@ -18,6 +19,14 @@ const router = Router();
 
 router.get('/', getProducts);
 router.get('/:id', getProduct);
+
+// Estadísticas de productos por restaurante — solo ADMIN_RESTAURANTE y ADMIN_SISTEMA
+router.get(
+    '/stats/:restaurantId',
+    validateJWT,
+    hasRole(ADMIN_RESTAURANTE, ADMIN_SISTEMA),
+    getProductStats
+);
 
 router.post(
     '/',

@@ -105,10 +105,12 @@ export const createNewUser = async (userData) => {
         );
 
         // Crear el perfil del usuario
-        const { getDefaultAvatarPath } = await import(
+        const { getDefaultAvatarUrl } = await import(
             '../helpers/cloudinary-service.js'
         );
-        const defaultAvatarFilename = getDefaultAvatarPath();
+        // Usar la URL del avatar default de Cloudinary.
+        // Cuando tengas el archivo, agrega CLOUDINARY_DEFAULT_AVATAR_FILENAME al .env.
+        const defaultAvatarFilename = getDefaultAvatarUrl();
 
         await UserProfile.create(
             {

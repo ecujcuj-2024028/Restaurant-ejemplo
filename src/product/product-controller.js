@@ -1,6 +1,7 @@
 'use strict';
 
 import Product from './products-model.js';
+import Restaurant from '../restaurants/restaurant.model.js';
 import { cloudinary, extractPublicId } from '../../middlewares/restaurant-uploader.js';
 import { InventoryItem } from '../inventory/inventory.model.js';
 
@@ -162,5 +163,85 @@ export const deleteProduct = async (req, res) => {
         return res.status(200).json({ success: true, message: 'Producto desactivado' });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   GET /products/stats/:restaurantId
+   Estadísticas de productos para el ADMIN_RESTAURANTE dueño del restaurante
+───────────────────────────────────────────────────────────────────────────── */
+export const getProductStats = async (req, res) => {
+    try {
+        const { restaurantId } = req.params;
+
+        // Verificar que el restaurante existe y pertenece al usuario autenticado
+        const restaurant = await Restaurant.findById(restaurantId);
+
+        if (!restaurant || !restaurant.isActive) {
+            return res.status(404).json({
+                success: false,
+                message: 'Restaurante no encontrado.',
+            });
+        }
+
+        // Solo el dueño del restaurante puede ver sus estadísticas
+        const userRoles = req.user.UserRoles.map(ur => ur.Role.Name);
+        const isAdminSistema = userRoles.includes('ADMIN_SISTEMA');
+
+        if (!isAdminSistema && restaurant.ownerId !== req.userId) {
+            return res.status(403).json({
+                success: false,
+                message: 'No tienes permiso para ver las estadísticas de este restaurante.',
+            });
+        }
+
+        // Traer todos los productos del restaurante (activos e inactivos)
+        const products = await Product.find({ restaurant: restaurantId })
+            .populate('category', 'name');
+
+        const total = products.length;
+        const active = products.filter(p => p.isActive).length;
+        const inactive = products.filter(p => !p.isActive).length;
+        const available = products.filter(p => p.isActive && p.isAvailable).length;
+        const unavailable = products.filter(p => p.isActive && !p.isAvailable).length;
+
+        // Distribución por tipo (solo productos activos)
+        const byType = products
+            .filter(p => p.isActive)
+            .reduce((acc, p) => {
+                acc[p.type] = (acc[p.type] || 0) + 1;
+                return acc;
+            }, {});
+
+        // Distribución por categoría (solo productos activos)
+        const byCategory = products
+            .filter(p => p.isActive && p.category)
+            .reduce((acc, p) => {
+                const categoryName = p.category?.name || 'Sin categoría';
+                acc[categoryName] = (acc[categoryName] || 0) + 1;
+                return acc;
+            }, {});
+
+        return res.status(200).json({
+            success: true,
+            restaurantId,
+            restaurantName: restaurant.name,
+            stats: {
+                total,
+                active,
+                inactive,
+                available,
+                unavailable,
+                byType,
+                byCategory,
+            },
+        });
+
+    } catch (error) {
+        console.error('[ProductController] getProductStats:', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
     }
 };

@@ -55,7 +55,7 @@ export const globalSearch = async (req, res) => {
             if (maxPrice) productFilter.price.$lte = parseFloat(maxPrice);
         }
 
-        /* ── Filtro por categoría (aplica a ambas colecciones) ── */
+        /* ── Filtro por categoría ── */
         if (category) {
             const cats = await Category.find({
                 name: { $regex: category, $options: 'i' },
@@ -64,8 +64,11 @@ export const globalSearch = async (req, res) => {
 
             const catIds = cats.map((c) => c._id);
 
+            if (catIds.length > 0) {
+                productFilter.category = { $in: catIds };
+            }
+
             restaurantFilter.category = { $regex: category, $options: 'i' };
-            productFilter.category = { $in: catIds };
         }
 
         const [restaurantsTotal, productsTotal, restaurants, products] = await Promise.all([
@@ -73,7 +76,7 @@ export const globalSearch = async (req, res) => {
             Product.countDocuments(productFilter),
 
             Restaurant.find(restaurantFilter)
-                .select('name description address rating category image isActive') // ✅ category no categories
+                .select('name description address rating category image isActive')
                 .sort({ rating: -1 })
                 .skip(skip)
                 .limit(limit),
@@ -112,7 +115,6 @@ export const globalSearch = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
-
 /* ─────────────────────────────────────────────────────────────────────────────
    GET /search/restaurants?name=&category=&city=&minRating=&availability=&page=&limit=
    availability: true → solo restaurantes con al menos una mesa en estado "disponible"
@@ -128,19 +130,6 @@ export const searchRestaurants = async (req, res) => {
         if (minRating) filter.rating = { $gte: parseFloat(minRating) };
 
         if (category) {
-            const cats = await Category.find({
-                name: { $regex: category, $options: 'i' },
-                isActive: true,
-            }).select('_id');
-
-            if (cats.length === 0) {
-                return res.status(200).json({
-                    success: true,
-                    filters: { availability: availability ?? null },
-                    pagination: buildPaginationMeta(page, limit, 0),
-                    restaurants: [],
-                });
-            }
             filter.category = { $regex: category, $options: 'i' };
         }
 

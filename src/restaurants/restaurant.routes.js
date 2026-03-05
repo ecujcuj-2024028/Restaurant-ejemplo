@@ -28,11 +28,9 @@ router.post(
 // EDITAR: Ahora el dueño también puede, pero validamos que sea SUYO
 router.put(
     '/:id',
-    [
-        validateJWT,
-        hasRole(ADMIN_SISTEMA, ADMIN_RESTAURANTE),
-        validateOwnership(Restaurant)
-    ],
+    validateJWT,
+    hasRole(ADMIN_SISTEMA, ADMIN_RESTAURANTE),
+    validateOwnership(Restaurant),
     upload.single('image'),
     updateRestaurant
 );

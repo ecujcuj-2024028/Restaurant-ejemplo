@@ -106,9 +106,24 @@ export const createEvent = async (req, res) => {
             }
         }
 
+        const now = new Date();
+        let status = 'scheduled';
+
+        if (data.startDate && data.endDate) {
+            const start = new Date(data.startDate);
+            const end = new Date(data.endDate);
+
+            if (now >= start && now <= end) {
+                status = 'ongoing';
+            } else if (now > end) {
+                status = 'completed';
+            }
+        }
+
         const event = await Event.create({
             ...data,
-            restaurant: restaurantId
+            restaurant: restaurantId,
+            status
         });
 
         const populatedEvent = await Event.findById(event._id)
